@@ -4,6 +4,16 @@ server:
 
 
 gitlab:
-  base-url: https://gitlab.com
+  base-url: https://git.pc.com.cn
   private-token: hh8qNTCLD8-HwGyAaF6g
   webhook-secret: 123456
+
+
+logging:
+  level:
+    cn:
+      com:
+        pcauto:
+          service:
+            serviceImpl:
+              MergeRequestReviewServiceImpl=DEBUG:
