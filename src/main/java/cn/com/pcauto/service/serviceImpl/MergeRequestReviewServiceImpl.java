@@ -1,7 +1,11 @@
 package cn.com.pcauto.service.serviceImpl;
 
+import cn.com.pcauto.config.CodeReviewProperties;
 import cn.com.pcauto.dto.gitlab.FileChange;
 import cn.com.pcauto.dto.gitlab.MergeRequestChangesResponse;
+import cn.com.pcauto.llm.exception.LlmException;
+import cn.com.pcauto.llm.service.LlmChatService;
+import cn.com.pcauto.review.CodeReviewPromptBuilder;
 import cn.com.pcauto.service.GitLabApiService;
 import cn.com.pcauto.service.MergeRequestReviewService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,6 +27,8 @@ public class MergeRequestReviewServiceImpl implements MergeRequestReviewService 
     ));
 
     private final GitLabApiService gitLabApiService;
+    private final LlmChatService llmChatService;
+    private final CodeReviewProperties codeReviewProperties;
 
     @Override
     public void handleMergeRequestWebhook(JsonNode payload) {
@@ -51,10 +57,10 @@ public class MergeRequestReviewServiceImpl implements MergeRequestReviewService 
             return;
         }
 
-        fetchAndLogDiff(projectId, mrIid);
+        reviewMergeRequest(projectId, mrIid);
     }
 
-    private void fetchAndLogDiff(long projectId, long mrIid) {
+    private void reviewMergeRequest(long projectId, long mrIid) {
         try {
             MergeRequestChangesResponse changes =
                     gitLabApiService.getMergeRequestChanges(projectId, mrIid);
@@ -64,29 +70,54 @@ public class MergeRequestReviewServiceImpl implements MergeRequestReviewService 
                 return;
             }
 
-            log.info("Merge Request 请求id：{} 共 {} 个文件变更 ({} -> {})",
-                    mrIid,
-                    changes.getChanges().size(),
-                    changes.getSourceBranch(),
-                    changes.getTargetBranch());
+            logChangesSummary(mrIid, changes);
 
-            for (FileChange change : changes.getChanges()) {
-                int diffLen = change.getDiff() == null ? 0 : change.getDiff().length();
-                log.info("  - {} -> {} | new={} renamed={} deleted={} | diffChars={}",
-                        change.getOldPath(),
-                        change.getNewPath(),
-                        change.isNewFile(),
-                        change.isRenamedFile(),
-                        change.isDeletedFile(),
-                        diffLen);
-                if (log.isDebugEnabled() && change.getDiff() != null) {
-                    log.debug("diff content:\n{}", change.getDiff());
-                }
+            if (!codeReviewProperties.isEnabled()) {
+                log.info("AI 代码审查已关闭，跳过 MR !{}", mrIid);
+                return;
             }
 
-            // TODO: 将 changes 交给 AI 审查模块
+            runAiReview(projectId, mrIid, changes);
         } catch (Exception e) {
-            log.error("获取 MR diff 失败, projectId={}, mrIid={}", projectId, mrIid, e);
+            log.error("MR 审查失败, projectId={}, mrIid={}", projectId, mrIid, e);
+        }
+    }
+
+    private void logChangesSummary(long mrIid, MergeRequestChangesResponse changes) {
+        log.info("Merge Request 请求id：{} 共 {} 个文件变更 ({} -> {})",
+                mrIid,
+                changes.getChanges().size(),
+                changes.getSourceBranch(),
+                changes.getTargetBranch());
+
+        for (FileChange change : changes.getChanges()) {
+            int diffLen = change.getDiff() == null ? 0 : change.getDiff().length();
+            log.info("  - {} -> {} | new={} renamed={} deleted={} | diffChars={}",
+                    change.getOldPath(),
+                    change.getNewPath(),
+                    change.isNewFile(),
+                    change.isRenamedFile(),
+                    change.isDeletedFile(),
+                    diffLen);
+            if (log.isDebugEnabled() && change.getDiff() != null) {
+                log.debug("diff content:\n{}", change.getDiff());
+            }
+        }
+    }
+
+    private void runAiReview(long projectId, long mrIid, MergeRequestChangesResponse changes) {
+        String userMessage = CodeReviewPromptBuilder.buildUserMessage(changes, codeReviewProperties.getMaxDiffChars());
+
+        log.info("开始 AI 审查 MR !{}, promptChars={}", mrIid, userMessage.length());
+
+        try {
+            String reviewContent = llmChatService.chat(CodeReviewPromptBuilder.systemPrompt(), userMessage);
+            String noteBody = CodeReviewPromptBuilder.formatReviewNote(reviewContent);
+
+            gitLabApiService.createMergeRequestNote(projectId, mrIid, noteBody);
+            log.info("AI 审查完成并已评论到 MR !{}", mrIid);
+        } catch (LlmException e) {
+            log.error("AI 审查调用失败, MR !{}: {}", mrIid, e.getMessage(), e);
         }
     }
 

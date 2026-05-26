@@ -11,4 +11,11 @@ public interface GitLabApiService {
      */
     MergeRequestChangesResponse getMergeRequestChanges(Long projectId, Long mergeRequestIid);
 
+    /**
+     * 在 Merge Request 下创建一条评论（Note）
+     *
+     * @see <a href="https://docs.gitlab.com/ee/api/notes.html#create-new-merge-request-note">Create MR note</a>
+     */
+    void createMergeRequestNote(Long projectId, Long mergeRequestIid, String body);
+
 }
