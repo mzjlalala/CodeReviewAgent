@@ -1,8 +1,9 @@
 package cn.com.pcauto.controller;
 
+import cn.com.pcauto.config.GitLabProperties;
 import cn.com.pcauto.service.WebhookService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,16 +15,14 @@ import java.nio.charset.StandardCharsets;
 @RestController
 @RequestMapping("/api/gitlab")
 @Slf4j
+@RequiredArgsConstructor
 public class GitLabWebhookController {
 
     // 本机ip： 10.4.41.78
     //   http://10.4.41.78:8080/api/gitlab/webhook
 
-    // 在 GitLab 后台配置 Webhook 时设置的 Secret Token
-    private static final String SECRET_TOKEN = "123456";
-
-    @Autowired
-    private WebhookService webhookService;
+    private final GitLabProperties gitLabProperties;
+    private final WebhookService webhookService;
 
     @PostMapping("/webhook")
     public ResponseEntity<String> handleGitLabWebhook(
@@ -34,7 +33,8 @@ public class GitLabWebhookController {
         log.info("收到 GitLab Webhook 事件: {}, Payload长度: {}", eventType, payload.length());
 
         // 1. 基础安全校验：验证 Secret Token
-        if (SECRET_TOKEN != null && !SECRET_TOKEN.equals(gitlabToken)) {
+        String secretToken = gitLabProperties.getWebhookSecret();
+        if (secretToken != null && !secretToken.isEmpty() && !secretToken.equals(gitlabToken)) {
             log.warn("非法的 Webhook 请求，Token 校验失败！");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid Token");
         }
@@ -62,7 +62,7 @@ public class GitLabWebhookController {
         try {
             String algorithm = "HmacSHA256";
             Mac mac = Mac.getInstance(algorithm);
-            SecretKeySpec secretKey = new SecretKeySpec(SECRET_TOKEN.getBytes(StandardCharsets.UTF_8), algorithm);
+            SecretKeySpec secretKey = new SecretKeySpec(gitLabProperties.getWebhookSecret().getBytes(StandardCharsets.UTF_8), algorithm);
             mac.init(secretKey);
             byte[] hash = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
             

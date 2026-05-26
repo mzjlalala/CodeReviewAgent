@@ -54,11 +54,6 @@ public class WebhookServiceImpl implements WebhookService {
     }
 
     private void handleMergeRequestEvent(JsonNode jsonNode) {
-        JsonNode objectAttributes = jsonNode.get("object_attributes");
-        String action = objectAttributes.get("action").asText(); // opened, updated, merged, closed
-        String title = objectAttributes.get("title").asText();
-        
-        log.info("检测到合并请求(MR)动作: {}, 标题: {}", action, title);
-        // TODO: 处理 MR 相关的业务逻辑
+        mergeRequestReviewService.handleMergeRequestWebhook(jsonNode);
     }
 }
