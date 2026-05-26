@@ -42,7 +42,7 @@ public class GitLabApiServiceImpl implements GitLabApiService {
                     url, HttpMethod.GET, entity, MergeRequestChangesResponse.class);
             return response.getBody();
         } catch (RestClientException e) {
-            log.error("调用 GitLab API 失败: {}", url, e);
+            log.error("调用 GitLab API - GitLab MR changes 失败: {}", url, e);
             throw e;
         }
     }
@@ -55,8 +55,7 @@ public class GitLabApiServiceImpl implements GitLabApiService {
         }
 
         String baseUrl = trimTrailingSlash(gitLabProperties.getBaseUrl());
-        String url = String.format("%s/api/v4/projects/%d/merge_requests/%d/notes",
-                baseUrl, projectId, mergeRequestIid);
+        String url = String.format("%s/api/v4/projects/%d/merge_requests/%d/notes", baseUrl, projectId, mergeRequestIid);
 
         HttpHeaders headers = authHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

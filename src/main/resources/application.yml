@@ -16,4 +16,4 @@ logging:
         pcauto:
           service:
             serviceImpl:
-              MergeRequestReviewServiceImpl=DEBUG:
+              MergeRequestReviewServiceImpl: DEBUG
