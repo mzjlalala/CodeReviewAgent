@@ -64,7 +64,7 @@ public class MergeRequestReviewServiceImpl implements MergeRequestReviewService 
                 return;
             }
 
-            log.info("MR !{} 共 {} 个文件变更 ({} -> {})",
+            log.info("Merge Request 请求id：{} 共 {} 个文件变更 ({} -> {})",
                     mrIid,
                     changes.getChanges().size(),
                     changes.getSourceBranch(),

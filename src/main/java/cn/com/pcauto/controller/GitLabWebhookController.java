@@ -1,15 +1,16 @@
 package cn.com.pcauto.controller;
 
+import cn.com.pcauto.common.dto.ResultMsg;
 import cn.com.pcauto.config.GitLabProperties;
 import cn.com.pcauto.service.WebhookService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 
 @RestController
@@ -25,10 +26,13 @@ public class GitLabWebhookController {
     private final WebhookService webhookService;
 
     @PostMapping("/webhook")
-    public ResponseEntity<String> handleGitLabWebhook(
+    public ResultMsg<?> handleGitLabWebhook(
             @RequestBody String payload,
-            @RequestHeader("X-Gitlab-Token") String gitlabToken,
-            @RequestHeader("X-Gitlab-Event") String eventType) {
+            HttpServletRequest request, HttpServletResponse response) {
+
+        // 从原始请求中获取请求头信息
+        String gitlabToken = request.getHeader("X-Gitlab-Token");
+        String eventType = request.getHeader("X-Gitlab-Event");
 
         log.info("收到 GitLab Webhook 事件: {}, Payload长度: {}", eventType, payload.length());
 
@@ -36,7 +40,8 @@ public class GitLabWebhookController {
         String secretToken = gitLabProperties.getWebhookSecret();
         if (secretToken != null && !secretToken.isEmpty() && !secretToken.equals(gitlabToken)) {
             log.warn("非法的 Webhook 请求，Token 校验失败！");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid Token");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return ResultMsg.unauthorized("Invalid Token");
         }
 
         // 2. 进阶安全校验（推荐）：验证 X-Hub-Signature-256 签名
@@ -51,8 +56,8 @@ public class GitLabWebhookController {
             // 即使业务处理失败，也先返回 200 给 GitLab，避免它重复重试
         }
 
-        // 4. 立即返回 200 OK，告诉 GitLab 已成功接收
-        return ResponseEntity.ok("Webhook received successfully");
+        // 4. 立即返回 200 OK，告诉 GitLab 已成功接收（HTTP 200 + body.code=0）
+        return ResultMsg.ok("Webhook received successfully");
     }
 
     /**
@@ -65,10 +70,10 @@ public class GitLabWebhookController {
             SecretKeySpec secretKey = new SecretKeySpec(gitLabProperties.getWebhookSecret().getBytes(StandardCharsets.UTF_8), algorithm);
             mac.init(secretKey);
             byte[] hash = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
-            
+
             // 将计算出的哈希值与 Header 中的签名进行比对（此处省略具体的十六进制转换和比对逻辑）
             // return calculatedHex.equals(signatureHeader.replace("sha256=", ""));
-            return true; 
+            return true;
         } catch (Exception e) {
             return false;
         }
