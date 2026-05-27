@@ -118,6 +118,16 @@ public class CodeReviewOrchestrator {
             changes.setProjectId(projectId);
 
             String reviewContent = codeReviewAgent.review(changes, codeReviewProperties.getMaxDiffChars());
+
+            // 输出 Agent 推理过程到日志
+            var trace = codeReviewAgent.getLastTrace();
+            if (trace != null && !trace.isEmpty()) {
+                log.info("Agent 推理过程 (MR !{}) 共 {} 步:", mrIid, trace.size());
+                for (var step : trace) {
+                    log.info("  {} {}", step.phase(), step.content());
+                }
+            }
+
             String noteBody = CodeReviewPromptBuilder.formatReviewNote(reviewContent);
             gitLabApiService.createMergeRequestNote(projectId, mrIid, noteBody);
 
