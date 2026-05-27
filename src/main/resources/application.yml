@@ -35,5 +35,4 @@ logging:
       com:
         pcauto:
           service:
-            serviceImpl:
-              MergeRequestReviewServiceImpl: DEBUG
+            CodeReviewOrchestrator: DEBUG

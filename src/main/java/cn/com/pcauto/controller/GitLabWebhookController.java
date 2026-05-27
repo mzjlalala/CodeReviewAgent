@@ -2,7 +2,7 @@ package cn.com.pcauto.controller;
 
 import cn.com.pcauto.common.dto.ResultMsg;
 import cn.com.pcauto.config.GitLabProperties;
-import cn.com.pcauto.service.WebhookService;
+import cn.com.pcauto.service.CodeReviewOrchestrator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +23,7 @@ public class GitLabWebhookController {
     //   http://10.4.41.78:8080/api/gitlab/webhook
 
     private final GitLabProperties gitLabProperties;
-    private final WebhookService webhookService;
+    private final CodeReviewOrchestrator orchestrator;
 
     @PostMapping("/webhook")
     public ResultMsg<?> handleGitLabWebhook(
@@ -50,7 +50,7 @@ public class GitLabWebhookController {
         // 3. 异步处理业务逻辑（避免阻塞导致 GitLab 认为超时）
         // 实际开发中建议将 payload 发送到消息队列（如 RabbitMQ/Kafka）或交给 @Async 方法处理
         try {
-            webhookService.processPayload(eventType, payload);
+            orchestrator.handleWebhook(eventType, payload);
         } catch (Exception e) {
             log.error("处理 Webhook 业务逻辑异常", e);
             // 即使业务处理失败，也先返回 200 给 GitLab，避免它重复重试

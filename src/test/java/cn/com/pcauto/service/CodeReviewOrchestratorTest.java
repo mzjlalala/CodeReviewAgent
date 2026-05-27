@@ -1,16 +1,16 @@
-package cn.com.pcauto.service.serviceImpl;
+package cn.com.pcauto.service;
 
 import cn.com.pcauto.agent.CodeReviewAgent;
 import cn.com.pcauto.config.CodeReviewProperties;
 import cn.com.pcauto.dto.gitlab.FileChange;
 import cn.com.pcauto.dto.gitlab.MergeRequestChangesResponse;
-import cn.com.pcauto.service.GitLabApiService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class MergeRequestReviewServiceImplTest {
+class CodeReviewOrchestratorTest {
 
     @Mock
     private GitLabApiService gitLabApiService;
@@ -36,13 +36,14 @@ class MergeRequestReviewServiceImplTest {
     @Mock
     private CodeReviewProperties codeReviewProperties;
 
-    @InjectMocks
-    private MergeRequestReviewServiceImpl mergeRequestReviewService;
-
+    @Spy
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @InjectMocks
+    private CodeReviewOrchestrator orchestrator;
+
     @Test
-    void handleMergeRequestWebhook_shouldReviewAndPostNote() throws Exception {
+    void shouldReviewAndPostNoteWhenMrOpened() throws Exception {
         when(codeReviewProperties.isEnabled()).thenReturn(true);
         when(codeReviewProperties.getMaxDiffChars()).thenReturn(80000);
 
@@ -64,7 +65,7 @@ class MergeRequestReviewServiceImplTest {
         when(gitLabApiService.getMergeRequestChanges(99L, 12L)).thenReturn(changes);
         when(codeReviewAgent.review(eq(changes), anyInt())).thenReturn("未发现明显问题");
 
-        mergeRequestReviewService.handleMergeRequestWebhook(objectMapper.readTree(payload));
+        orchestrator.handleWebhook("Merge Request Hook", payload);
 
         ArgumentCaptor<String> noteCaptor = ArgumentCaptor.forClass(String.class);
         verify(gitLabApiService).createMergeRequestNote(eq(99L), eq(12L), noteCaptor.capture());
@@ -73,7 +74,7 @@ class MergeRequestReviewServiceImplTest {
     }
 
     @Test
-    void handleMergeRequestWebhook_shouldSkipWhenReviewDisabled() throws Exception {
+    void shouldSkipReviewWhenDisabled() throws Exception {
         when(codeReviewProperties.isEnabled()).thenReturn(false);
 
         String payload = "{"
@@ -90,7 +91,7 @@ class MergeRequestReviewServiceImplTest {
 
         when(gitLabApiService.getMergeRequestChanges(anyLong(), anyLong())).thenReturn(changes);
 
-        mergeRequestReviewService.handleMergeRequestWebhook(objectMapper.readTree(payload));
+        orchestrator.handleWebhook("Merge Request Hook", payload);
 
         verify(codeReviewAgent, never()).review(eq(changes), anyInt());
         verify(gitLabApiService, never()).createMergeRequestNote(anyLong(), anyLong(), anyString());
