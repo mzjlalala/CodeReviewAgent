@@ -17,6 +17,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.UnsupportedEncodingException;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -88,6 +90,35 @@ public class GitLabApiServiceImpl implements GitLabApiService {
         HttpHeaders headers = new HttpHeaders();
         headers.set("PRIVATE-TOKEN", gitLabProperties.getPrivateToken());
         return headers;
+    }
+
+    @Override
+    public String getBaseUrl() {
+        return gitLabProperties.getBaseUrl();
+    }
+
+    @Override
+    public String getRawFileContent(Long projectId, String filePath, String ref) throws UnsupportedEncodingException {
+        ensureTokenConfigured();
+
+        String baseUrl = trimTrailingSlash(gitLabProperties.getBaseUrl());
+        String encodedPath = java.net.URLEncoder.encode(filePath, String.valueOf(java.nio.charset.StandardCharsets.UTF_8))
+                .replace("+", "%20");
+        String url = String.format("%s/api/v4/projects/%d/repository/files/%s/raw?ref=%s",
+                baseUrl, projectId, encodedPath, ref);
+
+        HttpEntity<Void> entity = new HttpEntity<>(authHeaders());
+
+        log.info("请求 GitLab 原始文件: projectId={}, path={}, ref={}", projectId, filePath, ref);
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url, HttpMethod.GET, entity, String.class);
+            return response.getBody();
+        } catch (RestClientException e) {
+            log.error("获取 GitLab 原始文件失败: {}", url, e);
+            throw e;
+        }
     }
 
     private static String trimTrailingSlash(String url) {

@@ -1,10 +1,9 @@
 package cn.com.pcauto.service.serviceImpl;
 
+import cn.com.pcauto.agent.CodeReviewAgent;
 import cn.com.pcauto.config.CodeReviewProperties;
 import cn.com.pcauto.dto.gitlab.FileChange;
 import cn.com.pcauto.dto.gitlab.MergeRequestChangesResponse;
-import cn.com.pcauto.llm.exception.LlmException;
-import cn.com.pcauto.llm.service.LlmChatService;
 import cn.com.pcauto.review.CodeReviewPromptBuilder;
 import cn.com.pcauto.service.GitLabApiService;
 import cn.com.pcauto.service.MergeRequestReviewService;
@@ -27,7 +26,7 @@ public class MergeRequestReviewServiceImpl implements MergeRequestReviewService 
     ));
 
     private final GitLabApiService gitLabApiService;
-    private final LlmChatService llmChatService;
+    private final CodeReviewAgent codeReviewAgent;
     private final CodeReviewProperties codeReviewProperties;
 
     @Override
@@ -106,18 +105,18 @@ public class MergeRequestReviewServiceImpl implements MergeRequestReviewService 
     }
 
     private void runAiReview(long projectId, long mrIid, MergeRequestChangesResponse changes) {
-        String userMessage = CodeReviewPromptBuilder.buildUserMessage(changes, codeReviewProperties.getMaxDiffChars());
-
-        log.info("开始 AI 审查 MR !{}, promptChars={}", mrIid, userMessage.length());
+        log.info("Agent 开始审查 MR !{}, 文件数={}", mrIid, changes.getChanges().size());
 
         try {
-            String reviewContent = llmChatService.chat(CodeReviewPromptBuilder.systemPrompt(), userMessage);
+            changes.setIid(mrIid);
+            changes.setProjectId(projectId);
+            String reviewContent = codeReviewAgent.review(changes, codeReviewProperties.getMaxDiffChars());
             String noteBody = CodeReviewPromptBuilder.formatReviewNote(reviewContent);
 
             gitLabApiService.createMergeRequestNote(projectId, mrIid, noteBody);
-            log.info("AI 审查完成并已评论到 MR !{}", mrIid);
-        } catch (LlmException e) {
-            log.error("AI 审查调用失败, MR !{}: {}", mrIid, e.getMessage(), e);
+            log.info("Agent 审查完成并已评论到 MR !{}", mrIid);
+        } catch (Exception e) {
+            log.error("Agent 审查失败, MR !{}: {}", mrIid, e.getMessage(), e);
         }
     }
 

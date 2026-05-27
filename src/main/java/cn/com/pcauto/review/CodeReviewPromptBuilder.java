@@ -7,24 +7,11 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 
 /**
- * 将 MR diff 组装为 LLM 可理解的 Prompt
+ * 将 MR diff 组装为 LLM / Agent 可理解的 Prompt
  */
 public final class CodeReviewPromptBuilder {
 
-    private static final String SYSTEM_PROMPT =
-            "你是一名资深代码审查专家。请根据提供的 Merge Request diff 进行审查，"
-                    + "用中文输出结构化审查意见，包含：\n"
-                    + "1. 总体评价（简要）\n"
-                    + "2. 潜在问题（按严重程度：高/中/低，说明位置与原因）\n"
-                    + "3. 改进建议\n"
-                    + "4. 值得肯定的写法（如有）\n"
-                    + "若 diff 不完整或被截断，请在开头说明。无问题时也要明确说明。";
-
     private CodeReviewPromptBuilder() {
-    }
-
-    public static String systemPrompt() {
-        return SYSTEM_PROMPT;
     }
 
     public static String buildUserMessage(MergeRequestChangesResponse changes, int maxDiffChars) {

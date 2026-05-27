@@ -1,9 +1,9 @@
 package cn.com.pcauto.service.serviceImpl;
 
+import cn.com.pcauto.agent.CodeReviewAgent;
 import cn.com.pcauto.config.CodeReviewProperties;
 import cn.com.pcauto.dto.gitlab.FileChange;
 import cn.com.pcauto.dto.gitlab.MergeRequestChangesResponse;
-import cn.com.pcauto.llm.service.LlmChatService;
 import cn.com.pcauto.service.GitLabApiService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -30,7 +31,7 @@ class MergeRequestReviewServiceImplTest {
     private GitLabApiService gitLabApiService;
 
     @Mock
-    private LlmChatService llmChatService;
+    private CodeReviewAgent codeReviewAgent;
 
     @Mock
     private CodeReviewProperties codeReviewProperties;
@@ -61,7 +62,7 @@ class MergeRequestReviewServiceImplTest {
         changes.setChanges(Collections.singletonList(change));
 
         when(gitLabApiService.getMergeRequestChanges(99L, 12L)).thenReturn(changes);
-        when(llmChatService.chat(anyString(), anyString())).thenReturn("未发现明显问题");
+        when(codeReviewAgent.review(eq(changes), anyInt())).thenReturn("未发现明显问题");
 
         mergeRequestReviewService.handleMergeRequestWebhook(objectMapper.readTree(payload));
 
@@ -91,7 +92,7 @@ class MergeRequestReviewServiceImplTest {
 
         mergeRequestReviewService.handleMergeRequestWebhook(objectMapper.readTree(payload));
 
-        verify(llmChatService, never()).chat(anyString(), anyString());
+        verify(codeReviewAgent, never()).review(eq(changes), anyInt());
         verify(gitLabApiService, never()).createMergeRequestNote(anyLong(), anyLong(), anyString());
     }
 
