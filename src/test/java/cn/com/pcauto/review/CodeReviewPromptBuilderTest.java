@@ -19,6 +19,7 @@ class CodeReviewPromptBuilderTest {
 
         MergeRequestChangesResponse changes = new MergeRequestChangesResponse();
         changes.setTitle("fix foo");
+        changes.setProjectId(99L);
         changes.setSourceBranch("feature/foo");
         changes.setTargetBranch("main");
         changes.setChanges(Collections.singletonList(change));
@@ -26,7 +27,8 @@ class CodeReviewPromptBuilderTest {
         String message = CodeReviewPromptBuilder.buildUserMessage(changes, 80000);
 
         assertTrue(message.contains("MR 标题: fix foo"));
-        assertTrue(message.contains("feature/foo -> main"));
+        assertTrue(message.contains("GitLab 项目 ID: 99"));
+        assertTrue(message.contains("源分支: feature/foo → 目标分支: main"));
         assertTrue(message.contains("### 文件: src/Foo.java"));
         assertTrue(message.contains("```diff"));
         assertTrue(message.contains("+new"));
