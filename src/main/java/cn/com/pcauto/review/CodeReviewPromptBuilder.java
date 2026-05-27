@@ -56,11 +56,9 @@ public final class CodeReviewPromptBuilder {
         if (StringUtils.hasText(changes.getTitle())) {
             sb.append("MR 标题: ").append(changes.getTitle()).append('\n');
         }
-        sb.append("分支: ")
-                .append(nullToDash(changes.getSourceBranch()))
-                .append(" -> ")
-                .append(nullToDash(changes.getTargetBranch()))
-                .append('\n');
+        sb.append("GitLab 项目 ID: ").append(changes.getProjectId()).append('\n');
+        sb.append("源分支: ").append(nullToDash(changes.getSourceBranch()))
+                .append(" → 目标分支: ").append(nullToDash(changes.getTargetBranch())).append('\n');
         sb.append("变更文件数: ").append(changes.getChanges().size()).append("\n\n");
     }
 

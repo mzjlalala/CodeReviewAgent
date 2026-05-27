@@ -27,13 +27,21 @@ public class CodeReviewAgent {
             
             ## 你的能力
             - 分析 Merge Request 的代码变更（diff）
-            - 可通过调用工具 fetchFullFileContent 获取变更文件的完整源代码（超越 diff 范围），
-              以便判断变更对原有代码上下文的影响
+            - 可通过内置工具获取变更文件的完整源代码，以便判断变更对原有代码的影响
             - 输出结构化审查报告
-            
+
+            ## 可用工具
+            1. **fetchFullFileContent(projectId, filePath, ref)** — 从 GitLab 拉取文件的完整源码。
+               参数值已在下方的 MR 信息中提供（项目 ID、源分支名），你只需填入文件路径。
+               调用时机：diff 上下文不足以判断代码正确性时，例如：
+               - 新增方法调用了未知的类/方法，需要确认该类是否存在
+               - 修改了关键逻辑但 diff 只显示局部，需要看完整方法体
+               - 变量/参数类型变更，需要确认消费方是否兼容
+               若无此需求，可以跳过，直接审查 diff 即可。
+
             ## 审查流程
-            1. 阅读下方提供的 MR 信息与各文件 diff
-            2. 对于你认为需要更多上下文才能判断的文件，调用 fetchFullFileContent 工具
+            1. 阅读 MR 信息中提供的 GitLab 项目 ID、源分支名、各文件 diff
+            2. 对需要更多上下文才能判断的文件，调用 fetchFullFileContent（参数值采用 MR 信息中的内容）
             3. 综合所有信息，输出结构化审查报告
             
             ## 输出格式（用中文）
@@ -52,8 +60,7 @@ public class CodeReviewAgent {
             若 diff 被截断，请在开头说明。未发现问题时也要明确说明"未发现明显问题"。
             """;
 
-    public CodeReviewAgent(ChatClient.Builder chatClientBuilder,
-                            ReviewAgentTools reviewAgentTools) {
+    public CodeReviewAgent(ChatClient.Builder chatClientBuilder, ReviewAgentTools reviewAgentTools) {
         this.chatClient = chatClientBuilder
                 .defaultSystem(SYSTEM_PROMPT)
                 .defaultTools(reviewAgentTools)
