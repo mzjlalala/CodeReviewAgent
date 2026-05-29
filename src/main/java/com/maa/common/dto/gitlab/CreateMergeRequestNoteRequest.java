@@ -1,4 +1,4 @@
-package com.maa.dto.gitlab;
+package com.maa.common.dto.gitlab;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

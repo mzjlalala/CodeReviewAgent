@@ -1,8 +1,8 @@
 package com.maa.agent;
 
 import com.maa.agent.tools.ReviewAgentTools;
-import com.maa.dto.gitlab.MergeRequestChangesResponse;
-import com.maa.review.CodeReviewPromptBuilder;
+import com.maa.common.dto.gitlab.MergeRequestChangesResponse;
+import com.maa.agent.review.CodeReviewPromptBuilder;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;

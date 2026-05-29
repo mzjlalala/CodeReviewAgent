@@ -1,7 +1,7 @@
-package com.maa.review;
+package com.maa.agent.review;
 
-import com.maa.dto.gitlab.FileChange;
-import com.maa.dto.gitlab.MergeRequestChangesResponse;
+import com.maa.common.dto.gitlab.FileChange;
+import com.maa.common.dto.gitlab.MergeRequestChangesResponse;
 import org.springframework.util.StringUtils;
 
 import java.util.List;

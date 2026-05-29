@@ -1,6 +1,6 @@
 package com.maa.service;
 
-import com.maa.dto.gitlab.MergeRequestChangesResponse;
+import com.maa.common.dto.gitlab.MergeRequestChangesResponse;
 
 import java.io.UnsupportedEncodingException;
 

@@ -1,9 +1,9 @@
 package com.maa.service.serviceImpl;
 
 import com.maa.config.GitLabProperties;
-import com.maa.dto.gitlab.CreateMergeRequestNoteRequest;
-import com.maa.dto.gitlab.MergeRequestChangesResponse;
-import com.maa.dto.gitlab.MergeRequestNoteResponse;
+import com.maa.common.dto.gitlab.CreateMergeRequestNoteRequest;
+import com.maa.common.dto.gitlab.MergeRequestChangesResponse;
+import com.maa.common.dto.gitlab.MergeRequestNoteResponse;
 import com.maa.service.GitLabApiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

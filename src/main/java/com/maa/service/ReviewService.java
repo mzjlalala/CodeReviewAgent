@@ -2,9 +2,9 @@ package com.maa.service;
 
 import com.maa.agent.CodeReviewAgent;
 import com.maa.config.CodeReviewProperties;
-import com.maa.dto.gitlab.FileChange;
-import com.maa.dto.gitlab.MergeRequestChangesResponse;
-import com.maa.review.CodeReviewPromptBuilder;
+import com.maa.common.dto.gitlab.FileChange;
+import com.maa.common.dto.gitlab.MergeRequestChangesResponse;
+import com.maa.agent.review.CodeReviewPromptBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

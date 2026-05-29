@@ -1,7 +1,8 @@
 package com.maa.review;
 
-import com.maa.dto.gitlab.FileChange;
-import com.maa.dto.gitlab.MergeRequestChangesResponse;
+import com.maa.agent.review.CodeReviewPromptBuilder;
+import com.maa.common.dto.gitlab.FileChange;
+import com.maa.common.dto.gitlab.MergeRequestChangesResponse;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
