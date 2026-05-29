@@ -14,7 +14,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 
 @RestController
-@RequestMapping("/api/gitlab")
+@RequestMapping("/api/gitlab/webhook")
 @Slf4j
 @RequiredArgsConstructor
 public class GitLabWebhookController {
@@ -25,7 +25,7 @@ public class GitLabWebhookController {
     private final GitLabProperties gitLabProperties;
     private final CodeReviewOrchestrator orchestrator;
 
-    @PostMapping("/webhook")
+    @PostMapping("/aiCodeReview")
     public ResultMsg<?> handleGitLabWebhook(
             @RequestBody String payload,
             HttpServletRequest request, HttpServletResponse response) {
@@ -35,6 +35,7 @@ public class GitLabWebhookController {
         String eventType = request.getHeader("X-Gitlab-Event");
 
         log.info("收到 GitLab Webhook 事件: {}, Payload长度: {}", eventType, payload.length());
+
 
         // 1. 基础安全校验：验证 Secret Token
         String secretToken = gitLabProperties.getWebhookSecret();

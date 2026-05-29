@@ -4,9 +4,9 @@ server:
 
 
 gitlab:
-  base-url: https://git.pc.com.cn
-  private-token: hh8qNTCLD8-HwGyAaF6g
-  webhook-secret: 123456
+  base-url: http://192.168.100.132:8088
+  private-token: ${private-token}
+  webhook-secret: ${webhook-secret}
 
 # Spring AI 配置（当前厂商：deepseek，兼容 OpenAI Chat API 格式）
 # 如需切换厂商，修改 base-url / api-key / model 三项：
@@ -15,7 +15,7 @@ gitlab:
 spring:
   ai:
     openai:
-      base-url: https://api.deepseek.com/v1
+      base-url: https://api.deepseek.com
       api-key: ${DEEPSEEK_API_KEY}
       connection-timeout: 10s
       read-timeout: 120s
