@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>cn.com.pcauto</groupId>
+    <groupId>com.maa</groupId>
     <artifactId>AiCodeReview</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>AiCodeReview</name>
@@ -12,7 +12,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring-boot.version>3.4.5</spring-boot.version>
-        <spring-ai.version>1.0.0</spring-ai.version>
+        <spring-ai.version>1.1.2</spring-ai.version>
     </properties>
     <dependencies>
         <dependency>
@@ -88,8 +88,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>cn.com.pcauto.AiCodeReviewApplication</mainClass>
-                    <skip>true</skip>
+                    <mainClass>com.maa.AiCodeReviewApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>
