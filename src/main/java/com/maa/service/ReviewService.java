@@ -5,9 +5,7 @@ import com.maa.config.CodeReviewProperties;
 import com.maa.dto.gitlab.FileChange;
 import com.maa.dto.gitlab.MergeRequestChangesResponse;
 import com.maa.review.CodeReviewPromptBuilder;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,58 +15,25 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * 代码审查编排器 —— 直接接收 Webhook，路由事件并编排审查流程。
+ * 审核服务 —— 解析 Webhook payload，编排审查流程。
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CodeReviewOrchestrator {
+public class ReviewService {
 
     private static final Set<String> DIFF_ACTIONS = new HashSet<>(Arrays.asList(
             "open", "update", "reopen"
     ));
 
-    private final ObjectMapper objectMapper;
     private final GitLabApiService gitLabApiService;
     private final CodeReviewAgent codeReviewAgent;
     private final CodeReviewProperties codeReviewProperties;
 
-    // ────────── 入口 ──────────
-
-    public void handleWebhook(String eventType, String payload) {
-        try {
-            JsonNode jsonNode = objectMapper.readTree(payload);
-            switch (eventType) {
-                case "Push Hook":
-                    handlePushEvent(jsonNode);
-                    break;
-                case "Merge Request Hook":
-                    handleMergeRequestEvent(jsonNode);
-                    break;
-                default:
-                    log.info("暂未处理的事件类型: {}", eventType);
-            }
-        } catch (JsonProcessingException e) {
-            log.error("解析 Webhook Payload 失败", e);
-        }
-    }
-
-    // ────────── Push 事件 ──────────
-
-    private void handlePushEvent(JsonNode jsonNode) {
-        String ref = jsonNode.get("ref").asText();
-        String userName = jsonNode.get("user_name").asText();
-        String commitMessage = "";
-        if (jsonNode.has("commits") && jsonNode.get("commits").size() > 0) {
-            commitMessage = jsonNode.get("commits").get(0).get("message").asText();
-        }
-        log.info("Push: {} → {}, 提交: {}", userName, ref, commitMessage);
-        // TODO: 触发后续 CI/CD
-    }
-
-    // ────────── MR 事件 ──────────
-
-    private void handleMergeRequestEvent(JsonNode payload) {
+    /**
+     * 处理 MR Webhook 事件，判断是否需要拉取 diff 并触发审查。
+     */
+    public void handleMergeRequestEvent(JsonNode payload) {
         JsonNode attrs = payload.get("object_attributes");
         if (attrs == null || attrs.isNull()) {
             log.warn("MR Webhook 缺少 object_attributes，跳过");
@@ -95,7 +60,6 @@ public class CodeReviewOrchestrator {
     }
 
     // ────────── 审查流程 ──────────
-
     private void review(long projectId, long mrIid) {
         try {
             MergeRequestChangesResponse changes =
@@ -138,6 +102,15 @@ public class CodeReviewOrchestrator {
         }
     }
 
+    /**
+     * 记录合并请求的文件变更摘要信息。
+     * <p>
+     * 在 INFO 级别输出 MR ID、变更文件数量以及源分支到目标分支的变更信息；
+     * 在 DEBUG 级别详细输出每个文件的路径变更及类型标识（新建/重命名/删除）。
+     *
+     * @param mrIid 合并请求的内部 ID
+     * @param changes 合并请求的文件变更响应对象，包含变更列表和分支信息
+     */
     private void logSummary(long mrIid, MergeRequestChangesResponse changes) {
         log.info("MR !{} {} 个文件变更 ({} → {})",
                 mrIid, changes.getChanges().size(),
@@ -156,5 +129,4 @@ public class CodeReviewOrchestrator {
         JsonNode value = node.get(field);
         return value == null || value.isNull() ? "" : value.asText();
     }
-
 }
