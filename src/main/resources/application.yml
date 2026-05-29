@@ -31,5 +31,5 @@ code-review:
 
 logging:
   level:
-    cn.com.pcauto.agent: DEBUG      # Agent 推理过程（🤔思考 / 🔧工具 / 📝输出）
-    cn.com.pcauto.service: INFO     # 业务编排日志
+    com.maa.agent: DEBUG      # Agent 推理过程（🤔思考 / 🔧工具 / 📝输出）
+    com.maa.service: INFO     # 业务编排日志
