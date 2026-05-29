@@ -27,7 +27,7 @@ spring:
 # AI 代码审查
 code-review:
   enabled: true
-  max-diff-chars: 80000
+  max-diff-chars: 150000
 
 logging:
   level:
