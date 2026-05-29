@@ -1,21 +1,19 @@
 package com.maa.config;
 
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import okhttp3.OkHttpClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 
 @Configuration
-public class RestTemplateConfig {
+public class OkHttpClientConfig {
 
     @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder
+    public OkHttpClient okHttpClient() {
+        return new OkHttpClient.Builder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .readTimeout(Duration.ofSeconds(60))
                 .build();
     }
-
 }
