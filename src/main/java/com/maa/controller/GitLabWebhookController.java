@@ -3,23 +3,37 @@ package com.maa.controller;
 import com.maa.common.dto.ResultMsg;
 import com.maa.config.GitLabProperties;
 import com.maa.service.ReviewService;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.util.concurrent.Executor;
+
 @RestController
 @RequestMapping("/api/gitlab/webhook")
 @Slf4j
-@RequiredArgsConstructor
 public class GitLabWebhookController {
 
     private final GitLabProperties gitLabProperties;
     private final ObjectMapper objectMapper;
     private final ReviewService reviewService;
+    private final Executor taskExecutor;
+
+    public GitLabWebhookController(
+            GitLabProperties gitLabProperties,
+            ObjectMapper objectMapper,
+            ReviewService reviewService,
+            @Qualifier("taskExecutor") Executor taskExecutor) {
+        this.gitLabProperties = gitLabProperties;
+        this.objectMapper = objectMapper;
+        this.reviewService = reviewService;
+        this.taskExecutor = taskExecutor;
+    }
 
     @PostMapping("/aiCodeReview")
     public ResultMsg<?> handleGitLabWebhook(
@@ -39,10 +53,11 @@ public class GitLabWebhookController {
             return ResultMsg.unauthorized("Invalid Token");
         }
 
-        // 2. 路由到对应的业务处理
+        // 2. 异步提交到线程池，立即返回
         try {
             if ("Merge Request Hook".equals(eventType)) {
-                reviewService.handleMergeRequestEvent(objectMapper.readTree(payload));
+                JsonNode payloadJson = objectMapper.readTree(payload);
+                taskExecutor.execute(() -> reviewService.handleMergeRequestEvent(payloadJson));
             } else {
                 log.info("暂未处理的事件类型: {}", eventType);
             }
