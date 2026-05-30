@@ -26,7 +26,7 @@ This is a GitLab MR AI code review bot. It receives GitLab webhook events, fetch
 
 ```
 GitLab Webhook → GitLabWebhookController (token validation, event routing)
-                    → taskExecutor.execute(...)  ← async, returns 200 immediately
+                    → reviewTaskExecutor.execute(...)  ← async, returns 200 immediately
                     → ReviewService.handleMergeRequestEvent()
                          → GitLabApiService.getMergeRequestChanges()  (OkHttp → GitLab REST API)
                          → CodeReviewAgent.review()                    (ReAct Agent with LLM)
@@ -36,10 +36,10 @@ GitLab Webhook → GitLabWebhookController (token validation, event routing)
 ### Key design decisions
 
 - **Controller is thin**: validates token via `X-Gitlab-Token` header, routes by `X-Gitlab-Event` header, submits to thread pool, returns immediately. No business logic.
-- **Async via explicit Executor**: Controller injects `@Qualifier("taskExecutor") Executor` and calls `executor.execute()`. NOT `@Async` — the async behavior is visible at the call site.
+- **Async via explicit Executor**: Controller injects `@Qualifier("reviewTaskExecutor") Executor` and calls `reviewTaskExecutor.execute()`. NOT `@Async` — the async behavior is visible at the call site.
 - **OkHttp, not RestTemplate**: `GitLabApiServiceImpl` uses OkHttp 4.12.0 for all GitLab API calls, serializing/deserializing with Jackson `ObjectMapper`. The client bean is configured in `OkHttpClientConfig` with 10s connect / 60s read timeouts.
 - **ReAct Agent with tools**: `CodeReviewAgent` wraps Spring AI Alibaba's `ReactAgent`. The AI can call `fetchFullFileContent` (a `@Tool` method in `ReviewAgentTools`) to get full source context beyond the diff. Reasoning traces are collected via interceptors (`ReviewReasoningInterceptor` → `ReasoningTraceCollector`).
-- **ThreadPoolExecutor**: defined in `ExecutorConfig`, bean name `taskExecutor`. core=2, max=4, queue=100, `CallerRunsPolicy` rejection. Thread prefix `review-`.
+- **ThreadPoolExecutor**: defined in `ExecutorConfig`, bean name `reviewTaskExecutor`. core=2, max=4, queue=100, `CallerRunsPolicy` rejection. Thread prefix `review-`. Backpressure: when saturated, Controller thread executes the task directly rather than dropping it.
 - **Diff truncation**: `CodeReviewPromptBuilder` caps diff content at `code-review.max-diff-chars` (default 150000). If exceeded, truncation is noted in the prompt so the LLM knows the diff is incomplete.
 
 ### Package layout
@@ -99,7 +99,7 @@ logging.level:
 
 ## GitLab Webhook Setup
 
-Endpoint: `POST /api/gitlab/webhook/aiCodeReview`
+Endpoint: `POST /api/gitlab/webhook/MR-aiCodeReview`
 
 Required headers:
 - `X-Gitlab-Token`: webhook secret (validated against `gitlab.webhook-secret`)
