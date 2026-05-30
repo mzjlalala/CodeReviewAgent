@@ -3,6 +3,7 @@ package com.maa.controller;
 import com.maa.common.dto.ResultMsg;
 import com.maa.config.GitLabProperties;
 import com.maa.service.ReviewService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -22,20 +23,20 @@ public class GitLabWebhookController {
     private final GitLabProperties gitLabProperties;
     private final ObjectMapper objectMapper;
     private final ReviewService reviewService;
-    private final Executor taskExecutor;
+    private final Executor reviewTaskExecutor;
 
     public GitLabWebhookController(
             GitLabProperties gitLabProperties,
             ObjectMapper objectMapper,
             ReviewService reviewService,
-            @Qualifier("taskExecutor") Executor taskExecutor) {
+            @Qualifier("reviewTaskExecutor") Executor reviewTaskExecutor) {
         this.gitLabProperties = gitLabProperties;
         this.objectMapper = objectMapper;
         this.reviewService = reviewService;
-        this.taskExecutor = taskExecutor;
+        this.reviewTaskExecutor = reviewTaskExecutor;
     }
 
-    @PostMapping("/aiCodeReview")
+    @PostMapping("/MR-aiCodeReview")
     public ResultMsg<?> handleGitLabWebhook(
             @RequestBody String payload,
             HttpServletRequest request, HttpServletResponse response) {
@@ -54,15 +55,22 @@ public class GitLabWebhookController {
         }
 
         // 2. 异步提交到线程池，立即返回
-        try {
-            if ("Merge Request Hook".equals(eventType)) {
-                JsonNode payloadJson = objectMapper.readTree(payload);
-                taskExecutor.execute(() -> reviewService.handleMergeRequestEvent(payloadJson));
-            } else {
-                log.info("暂未处理的事件类型: {}", eventType);
+        if ("Merge Request Hook".equals(eventType)) {
+            JsonNode payloadJson;
+            try {
+                payloadJson = objectMapper.readTree(payload);
+            } catch (JsonProcessingException e) {
+                log.error("Webhook payload JSON 解析失败", e);
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return ResultMsg.badRequest("Invalid JSON payload");
             }
-        } catch (Exception e) {
-            log.error("处理 Webhook 业务逻辑异常", e);
+            try {
+                reviewTaskExecutor.execute(() -> reviewService.handleMergeRequestEvent(payloadJson));
+            } catch (Exception e) {
+                log.error("提交审查任务失败", e);
+            }
+        } else {
+            log.info("暂未处理的事件类型: {}", eventType);
         }
 
         // 3. 立即返回 200 OK，避免 GitLab 超时重试

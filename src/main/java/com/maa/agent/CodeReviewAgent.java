@@ -79,6 +79,7 @@ public class CodeReviewAgent {
                 changes.getIid(), changes.getChanges().size(), userMessage.length());
 
         try {
+            // 调用 Agent
             AssistantMessage result = agent.call(userMessage);
             String content = result.getText();
 
