@@ -80,9 +80,10 @@ public class CodeReviewAgent {
 
         try {
             // 调用 Agent
+            long currentTimeMillis = System.currentTimeMillis();
             AssistantMessage result = agent.call(userMessage);
             String content = result.getText();
-
+            log.info("ReactAgent 审查完成 MR !{}, 耗时={}ms", changes.getIid(), System.currentTimeMillis() - currentTimeMillis);
             log.info("ReactAgent 审查完成 MR !{}, 报告长度={}", changes.getIid(),
                     content != null ? content.length() : 0);
             return content;
