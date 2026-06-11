@@ -10,15 +10,19 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * Webhook 回调异步线程池。
  * <p>
- * Controller 收到 Webhook 后立即返回 200，审查逻辑通过
- * {@code executor.execute(() -> reviewService.handle(...))} 提交到该线程池执行，
+ * Controller 收到 Webhook 后通过
+ * {@code reviewTaskExecutor.execute(() -> reviewService.handle(...))} 提交任务到该线程池执行，
  * 避免长时间阻塞 Servlet 请求线程。
+ * <p>
+ * 注意：当线程池 + 队列全满时，{@code CallerRunsPolicy} 会让 Controller
+ * 线程自行执行审查逻辑，此时 HTTP 响应会延迟几十秒。这是有意的背压设计，
+ * 避免任务被静默丢弃。
  */
 @Configuration
 public class ExecutorConfig {
 
     @Bean
-    public Executor taskExecutor() {
+    public Executor reviewTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         // 核心线程数：常态下保持 2 个线程待命
         executor.setCorePoolSize(2);

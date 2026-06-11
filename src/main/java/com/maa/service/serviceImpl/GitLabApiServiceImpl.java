@@ -86,7 +86,7 @@ public class GitLabApiServiceImpl implements GitLabApiService {
                 .get()
                 .build();
 
-        log.info("请求 GitLab 原始文件: projectId={}, path={}, ref={}", projectId, filePath, ref);
+        // log.info("请求 GitLab 原始文件: projectId={}, path={}, ref={}", projectId, filePath, ref);
         return execute(request, String.class);
     }
 
